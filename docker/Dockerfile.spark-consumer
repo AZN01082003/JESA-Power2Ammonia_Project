@@ -1,0 +1,26 @@
+# docker/Dockerfile.spark-consumer
+
+FROM bitnami/spark:3.4.1
+
+USER root
+
+# Install additional Python packages
+RUN pip install --no-cache-dir \
+    kafka-python \
+    psycopg2-binary \
+    influxdb-client \
+    prometheus-client
+
+# Copy Spark applications
+COPY spark/ /opt/spark-apps/
+COPY config/ /opt/spark-config/
+
+# Set permissions
+RUN chmod +x /opt/spark-apps/*.py
+
+USER 1001
+
+# Default command
+CMD ["/opt/bitnami/spark/bin/spark-submit", \
+     "--packages", "org.apache.spark:spark-sql-kafka-0-10_2.12:3.4.1", \
+     "/opt/spark-apps/consumers/kafka_spark_consumers.py"]

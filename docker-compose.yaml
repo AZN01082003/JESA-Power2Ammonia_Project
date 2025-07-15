@@ -1,0 +1,144 @@
+# docker-compose-simple.yml
+
+version: '3.8'
+
+services:
+  
+  # =============================================================================
+  # KAFKA STREAMING (ESSENTIEL)
+  # =============================================================================
+  
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.0
+    container_name: power2ammonia-zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    volumes:
+      - zookeeper-data:/var/lib/zookeeper/data
+    restart: unless-stopped
+
+  kafka:
+    image: confluentinc/cp-kafka:7.4.0
+    container_name: power2ammonia-kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092,PLAINTEXT_HOST://0.0.0.0:9092
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_DELETE_TOPIC_ENABLE: "true"
+      KAFKA_LOG_RETENTION_HOURS: 168  # 7 jours
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: power2ammonia-kafka-ui
+    depends_on:
+      - kafka
+    ports:
+      - "8080:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: power2ammonia
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+    restart: unless-stopped
+
+  # =============================================================================
+  # STOCKAGE (OPTIONNEL - décommentez si nécessaire)
+  # =============================================================================
+  
+  # postgresql:
+  #   image: postgres:15-alpine
+  #   container_name: power2ammonia-postgres
+  #   ports:
+  #     - "5432:5432"
+  #   environment:
+  #     POSTGRES_DB: power2ammonia
+  #     POSTGRES_USER: power2ammonia
+  #     POSTGRES_PASSWORD: power2ammonia_password
+  #   volumes:
+  #     - postgres-data:/var/lib/postgresql/data
+  #   restart: unless-stopped
+
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: power2ammonia-redis
+  #   ports:
+  #     - "6379:6379"
+  #   volumes:
+  #     - redis-data:/data
+  #   restart: unless-stopped
+
+  # =============================================================================
+  # SPARK (OPTIONNEL - décommentez si vous voulez Spark)
+  # =============================================================================
+  
+  # spark-master:
+  #   image: bitnami/spark:3.4.1
+  #   container_name: power2ammonia-spark-master
+  #   ports:
+  #     - "8081:8080"  # Spark UI
+  #     - "7077:7077"  # Spark Master
+  #   environment:
+  #     - SPARK_MODE=master
+  #     - SPARK_RPC_AUTHENTICATION_ENABLED=no
+  #     - SPARK_RPC_ENCRYPTION_ENABLED=no
+  #     - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+  #     - SPARK_SSL_ENABLED=no
+  #   restart: unless-stopped
+
+  # spark-worker-1:
+  #   image: bitnami/spark:3.4.1
+  #   container_name: power2ammonia-spark-worker-1
+  #   depends_on:
+  #     - spark-master
+  #   environment:
+  #     - SPARK_MODE=worker
+  #     - SPARK_MASTER_URL=spark://spark-master:7077
+  #     - SPARK_WORKER_MEMORY=2G
+  #     - SPARK_WORKER_CORES=2
+  #   restart: unless-stopped
+
+  # =============================================================================
+  # MONITORING (OPTIONNEL - décommentez si vous voulez Grafana)
+  # =============================================================================
+  
+  # grafana:
+  #   image: grafana/grafana:latest
+  #   container_name: power2ammonia-grafana
+  #   ports:
+  #     - "3000:3000"
+  #   environment:
+  #     - GF_SECURITY_ADMIN_USER=admin
+  #     - GF_SECURITY_ADMIN_PASSWORD=admin123
+  #   volumes:
+  #     - grafana-data:/var/lib/grafana
+  #   restart: unless-stopped
+
+volumes:
+  zookeeper-data:
+  kafka-data:
+  # postgres-data:    # Décommentez si vous utilisez PostgreSQL
+  # redis-data:       # Décommentez si vous utilisez Redis
+  # grafana-data:     # Décommentez si vous utilisez Grafana
+
+networks:
+  default:
+    name: power2ammonia-network

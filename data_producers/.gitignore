@@ -1,0 +1,17 @@
+# Ignorer l'environnement virtuel
+venv/
+env/
+
+# Ignorer les fichiers Python compilés
+__pycache__/
+*.pyc
+
+# Ignorer les notebooks checkpoints
+.ipynb_checkpoints/
+
+# (optionnel) Ignorer VS Code
+.vscode/
+
+# (optionnel) Ignorer les fichiers de logs ou temporaires
+*.log
+*.tmp

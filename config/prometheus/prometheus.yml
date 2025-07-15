@@ -1,0 +1,45 @@
+# config/prometheus/prometheus.yml
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  # - "first_rules.yml"
+  # - "second_rules.yml"
+
+scrape_configs:
+  # Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Kafka JMX metrics
+  - job_name: 'kafka'
+    static_configs:
+      - targets: ['kafka:9101']
+    scrape_interval: 30s
+
+  # Spark metrics
+  - job_name: 'spark-master'
+    static_configs:
+      - targets: ['spark-master:8080']
+    scrape_interval: 30s
+
+  # Custom application metrics (if implemented)
+  - job_name: 'power2ammonia-producers'
+    static_configs:
+      - targets: ['weather-producer:8000', 'equipment-producer:8001', 'system-orchestrator:8002']
+    scrape_interval: 30s
+    metrics_path: '/metrics'
+
+  # Infrastructure monitoring
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgresql:5432']
+    scrape_interval: 60s
+
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis:6379']
+    scrape_interval: 60s
